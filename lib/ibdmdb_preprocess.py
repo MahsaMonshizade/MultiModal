@@ -13,13 +13,13 @@ from biom import load_table
 # hmp2_metabolomics_df.to_csv('HMP2_metabolomics.csv')
 
 ### hmp2 metabolomics data with metadata biom to dataframe
-# hmp2_metabolomics_table = load_table('../Dataset/ibdmdb_data/HMP2_metabolomics_w_metadata.biom')
-# hmp2_metabolomics_df = hmp2_metabolomics_table.to_dataframe()
-# hmp2_metabolomics_df.to_csv('HMP2_metabolomics_w_metadata.csv')
-# metadata = hmp2_metabolomics_table.metadata()
+hmp2_metabolomics_table = load_table('../Dataset/ibdmdb_data/HMP2_metabolomics_w_metadata.biom')
+hmp2_metabolomics_df = hmp2_metabolomics_table.to_dataframe()
+hmp2_metabolomics_df.to_csv('HMP2_metabolomics_w_metadata.csv')
+metadata = hmp2_metabolomics_table.metadata()
 
 ### hmp2 metagenomics data taxonomic profile
-hmp2_taxonomic_table = load_table('../Dataset/ibdmdb_data/HMP2_Metagenomics_MGX/taxonomic_profiles.biom')
-hmp2_taxonomic_df = hmp2_taxonomic_table.to_dataframe()
-hmp2_taxonomic_df.to_csv('taxonomic_profiles.csv')
+# hmp2_taxonomic_table = load_table('../Dataset/ibdmdb_data/HMP2_Metagenomics_MGX/taxonomic_profiles.biom')
+# hmp2_taxonomic_df = hmp2_taxonomic_table.to_dataframe()
+# hmp2_taxonomic_df.to_csv('taxonomic_profiles.csv')
 
