@@ -12,3 +12,7 @@ conda activate
 conda install pandas
 conda install openpyxl
 ```
+
+metagenomics --> samples: 1638 , features: 578
+metabolomics --> samples: 546 , features: 81867
+metatranscriptomics --> samples: 817 , features: 78816  
