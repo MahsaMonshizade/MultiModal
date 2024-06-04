@@ -4,7 +4,7 @@
 
 ### Conda env
 
-My conda version: 23.7.4
+My conda version: 24.5.0
 
 ```
 conda create --name MultiModal
@@ -19,8 +19,8 @@ conda install conda-forge::tqdm
 conda install pytorch::pytorch torchvision torchaudio -c pytorch
 ```
 
-metagenomics --> samples: 1638 , features: 578
+metagenomics --> samples: 2891 , features: 578
 
-metabolomics --> samples: 546 , features: 81867
+metatranscriptomics --> samples: 2891 , features: 421  
 
-metatranscriptomics --> samples: 817 , features: 78816  
+metabolomics --> samples: 2891 , features: 596

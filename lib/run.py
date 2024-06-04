@@ -35,75 +35,54 @@ if __name__ == '__main__':
     conf = dict()
     conf['dataset'] = cancer_type
     metagenomics, metatranscriptomics, metabolomics, survival = load_data.load_IBD(DATASET_PATH, cancer_type,'mean') # Preprocessing method
+    print(metagenomics.shape)
+    print(metatranscriptomics.shape)
+    print(metabolomics.shape)
     metagenomics_df = torch.tensor(metagenomics.values, dtype=torch.float32).to(device)
     metatranscriptomics_df = torch.tensor(metatranscriptomics.values, dtype=torch.float32).to(device)
     metabolomics_df = torch.tensor(metabolomics.values, dtype=torch.float32).to(device)
     full_data = [utils.normalize(utils.metagenomics_normalize(metagenomics_df)), utils.normalize(metatranscriptomics_df), utils.normalize(metabolomics_df)]
-    
-    # metagenomics_numpy_array = metagenomics_df.numpy()
-    # unique_values_per_column = [np.unique(metagenomics_numpy_array[:, i]).size for i in range(metagenomics_numpy_array.shape[1])]
-    # print(unique_values_per_column)
-    # metagenomics_converted_df = pd.DataFrame(metagenomics_numpy_array)
-    # metagenomics_converted_df.to_csv('metagenomics_test_tensor.csv', index=False)
     print(full_data)
-    # # params
-    # conf = dict()
-    # conf['dataset'] = cancer_type
-    # conf['view_num'] = 3
-    # conf['batch_size'] = 128
-    # conf['encoder_dim'] = [1024]
-    # conf['feature_dim'] = 512
-    # conf['peculiar_dim'] = 128
-    # conf['common_dim'] = 128
-    # conf['mu_logvar_dim'] = 10
-    # conf['cluster_var_dim'] = 3 * conf['common_dim']
-    # conf['up_and_down_dim'] = 512
-    # conf['use_cuda'] = True
-    # conf['stop'] = 1e-6
-    # eval_epoch = 500
-    # lmda_list = dict()
-    # lmda_list['rec_lmda'] = 0.9
-    # lmda_list['KLD_lmda'] = 0.3
-    # lmda_list['I_loss_lmda'] = 0.1
-    # conf['kl_loss_lmda'] = 10
-    # conf['update_interval'] = 50
-    # conf['lr'] = 1e-4
-    # conf['pre_epochs'] = 1000
-    # conf['idec_epochs'] = 500
-    # # If the DILCR effect is not good, we recommend adjusting the preprocessing epoch.
-    # if conf['dataset'] == "aml":
-    #     conf['cluster_num'] = 3
-    # if conf['dataset'] == "brca":
-    #     conf['cluster_num'] = 5
-    # if conf['dataset'] == "skcm":
-    #     conf['cluster_num'] = 5
-    # if conf['dataset'] == "lihc":
-    #     conf['cluster_num'] = 5
-    # if conf['dataset'] == "coad":
-    #     conf['cluster_num'] = 4
-    # if conf['dataset'] == "kirc":
-    #     conf['cluster_num'] = 4
-    # if conf['dataset'] == "gbm":
-    #     conf['cluster_num'] = 3
-    # if conf['dataset'] == "ov":
-    #     conf['cluster_num'] = 3
-    # if conf['dataset'] == "lusc":
-    #     conf['cluster_num'] = 3
-    # if conf['dataset'] == "sarc":
-    #     conf['cluster_num'] = 5
-    # seed = 123456
-    # setup_seed(seed=seed)
+    # params
+    conf = dict()
+    conf['dataset'] = cancer_type
+    conf['view_num'] = 3
+    conf['batch_size'] = 128
+    conf['encoder_dim'] = [256]
+    conf['feature_dim'] = 256
+    conf['peculiar_dim'] = 128
+    conf['common_dim'] = 128
+    conf['mu_logvar_dim'] = 10
+    conf['cluster_var_dim'] = 3 * conf['common_dim']
+    conf['up_and_down_dim'] = 256
+    conf['use_cuda'] = True
+    conf['stop'] = 1e-6
+    eval_epoch = 500
+    lmda_list = dict()
+    lmda_list['rec_lmda'] = 0.9
+    lmda_list['KLD_lmda'] = 0.3
+    lmda_list['I_loss_lmda'] = 0.1
+    conf['kl_loss_lmda'] = 10
+    conf['update_interval'] = 50
+    conf['lr'] = 1e-4
+    conf['pre_epochs'] = 1000
+    conf['idec_epochs'] = 500
+    # If the DILCR effect is not good, we recommend adjusting the preprocessing epoch.
+    conf['cluster_num'] = 3
+    
+    seed = 123456
+    setup_seed(seed=seed)
     
     # # ========================Result File====================
-    # folder = "result/{}_result".format(conf['dataset'])
-    # if not os.path.exists(folder):
-    #     os.makedirs(folder)
+    folder = "result/{}_result".format(conf['dataset'])
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
-    # result = open("{}/{}_{}.csv".format(folder, conf['dataset'], conf['cluster_num']), 'w+')
-    # writer = csv.writer(result)
-    # writer.writerow(['p', 'logp', 'log10p', 'epoch', 'step'])
-    # # =======================Initialize the model and loss function====================
-    # in_dim = [exp_df.shape[1], methy_df.shape[1], mirna_df.shape[1]]
+    result = open("{}/{}_{}.csv".format(folder, conf['dataset'], conf['cluster_num']), 'w+')
+    writer = csv.writer(result)
+    writer.writerow(['p', 'logp', 'log10p', 'epoch', 'step'])
+    # =======================Initialize the model and loss function====================
+    in_dim = [metagenomics_df.shape[1], metatranscriptomics_df.shape[1], metabolomics_df.shape[1]]
     # model = DILCR(in_dim=in_dim, encoder_dim=conf['encoder_dim'], feature_dim=conf['feature_dim'],
     #               common_dim=conf['common_dim'],
     #               mu_logvar_dim=conf['mu_logvar_dim'], cluster_var_dim=conf['cluster_var_dim'],
