@@ -7,10 +7,16 @@
 My conda version: 23.7.4
 
 ```
-cond create --name MultiModal
-conda activate
+conda create --name MultiModal
+conda activate MultiModal
 conda install pandas
 conda install openpyxl
+conda install matplotlib
+conda install numpy
+conda install anaconda::scikit-learn
+conda install anaconda::scipy
+conda install conda-forge::tqdm
+conda install pytorch::pytorch torchvision torchaudio -c pytorch
 ```
 
 metagenomics --> samples: 1638 , features: 578

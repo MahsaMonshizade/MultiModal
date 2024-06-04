@@ -16,7 +16,9 @@ from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, p
 
 
 def metagenomics_normalize(x):
-    return torch.log2(2 * x - 0.00001)
+    return torch.log2(2 * x + 0.00001)
+    
+
 
 
 def normalize(x):

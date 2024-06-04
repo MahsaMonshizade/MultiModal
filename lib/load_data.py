@@ -17,36 +17,41 @@ def load_data_mean(path,cancer_type):
     metatranscriptomics_fill = metatranscriptomics.mean(axis=0)
     metabolomics_fill = metabolomics.mean(axis=0)
     
-    external_ids = meta_data['External ID'].values.tolist()
+    external_ids = meta_data.index.values.tolist()
     
-    metagenomics_ids = set(metagenomics['External ID'])
+    metagenomics_ids = set(metagenomics.index.values)
     new_metagenomics_ids = [value for value in external_ids if value not in metagenomics_ids]
     new_metagenomics_rows = pd.DataFrame({
     'External ID': new_metagenomics_ids,
-    **{f: metagenomics_fill[i] for i, f in enumerate(metagenomics.columns[1:])}
+    **{f: metagenomics_fill[i] for i, f in enumerate(metagenomics.columns[:])}
 })
-    metagenomics = pd.concat([metagenomics, new_metagenomics_rows], ignore_index=True)
-
-    metatranscriptomics_ids = set(metatranscriptomics['External ID'])
+    new_metagenomics_rows.set_index('External ID', inplace=True)
+    metagenomics = pd.concat([metagenomics, new_metagenomics_rows])
+    
+    # print("lol")
+    metatranscriptomics_ids = set(metatranscriptomics.index.values)
     new_metatranscriptomics_ids = [value for value in external_ids if value not in metatranscriptomics_ids]
     new_metatranscriptomics_rows = pd.DataFrame({
     'External ID': new_metatranscriptomics_ids,
-    **{f: metatranscriptomics_fill[i] for i, f in enumerate(metatranscriptomics.columns[1:])}
+    **{f: metatranscriptomics_fill[i] for i, f in enumerate(metatranscriptomics.columns[:])}
 })
-    metatranscriptomics = pd.concat([metatranscriptomics, new_metatranscriptomics_rows], ignore_index=True)
+    new_metatranscriptomics_rows.set_index('External ID', inplace=True)
+    metatranscriptomics = pd.concat([metatranscriptomics, new_metatranscriptomics_rows])
 
-    metabolomics_ids = set(metabolomics['External ID'])
+    metabolomics_ids = set(metabolomics.index.values)
+    metabolomics = metabolomics.fillna(metabolomics_fill)
     new_metabolomics_ids = [value for value in external_ids if value not in metabolomics_ids]
     new_metabolomics_rows = pd.DataFrame({
     'External ID': new_metabolomics_ids,
-    **{f: metabolomics_fill[i] for i, f in enumerate(metabolomics.columns[1:])}
+    **{f: metabolomics_fill[i] for i, f in enumerate(metabolomics.columns[:])}
 })
-    metabolomics = pd.concat([metabolomics, new_metabolomics_rows], ignore_index=True)
+    new_metabolomics_rows.set_index('External ID', inplace=True)
+    metabolomics = pd.concat([metabolomics, new_metabolomics_rows])
 
     # Step 5: Create a DataFrame for the new rows
-    metagenomics = metagenomics[external_ids]
-    metatranscriptomics = metatranscriptomics[external_ids]
-    metabolomics = metabolomics[external_ids]
+    metagenomics = metagenomics.reindex(external_ids)
+    metatranscriptomics = metatranscriptomics.reindex(external_ids)
+    metabolomics = metabolomics.reindex(external_ids)
 
     return [metagenomics, metatranscriptomics, metabolomics, meta_data]
 

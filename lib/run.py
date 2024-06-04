@@ -6,6 +6,7 @@ from torch.nn import functional as F
 import numpy as np
 from tqdm import tqdm
 from sklearn.cluster import KMeans
+import pandas as pd
 
 import os
 import csv
@@ -39,6 +40,11 @@ if __name__ == '__main__':
     metabolomics_df = torch.tensor(metabolomics.values, dtype=torch.float32).to(device)
     full_data = [utils.normalize(utils.metagenomics_normalize(metagenomics_df)), utils.normalize(metatranscriptomics_df), utils.normalize(metabolomics_df)]
     
+    # metagenomics_numpy_array = metagenomics_df.numpy()
+    # unique_values_per_column = [np.unique(metagenomics_numpy_array[:, i]).size for i in range(metagenomics_numpy_array.shape[1])]
+    # print(unique_values_per_column)
+    # metagenomics_converted_df = pd.DataFrame(metagenomics_numpy_array)
+    # metagenomics_converted_df.to_csv('metagenomics_test_tensor.csv', index=False)
     print(full_data)
     # # params
     # conf = dict()
