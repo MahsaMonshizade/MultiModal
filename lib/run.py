@@ -58,31 +58,24 @@ if __name__ == '__main__':
     dataset = TensorDataset(*X, y)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     # params
-    # params
     conf = dict()
     conf['dataset'] = cancer_type
     conf['view_num'] = 3
-    conf['batch_size'] = 128
+    conf['batch_size'] = 64
     conf['encoder_dim'] = [256]
     conf['feature_dim'] = 256
-    conf['peculiar_dim'] = 128
-    conf['common_dim'] = 128
-    conf['mu_logvar_dim'] = 10
-    conf['cluster_var_dim'] = 3 * conf['common_dim']
     conf['use_cuda'] = True
     conf['stop'] = 1e-6
-    eval_epoch = 10
+    eval_epoch = 5
     lmda_list = dict()
-    lmda_list['rec_lmda'] = 0.9
-    lmda_list['KLD_lmda'] = 0.3
-    lmda_list['I_loss_lmda'] = 0.1
-    conf['kl_loss_lmda'] = 10
+    lmda_list['rec_lmda'] = 0.009
+    lmda_list['KLD_lmda'] = 0.003
+    lmda_list['I_loss_lmda'] = 0.001
     conf['update_interval'] = 50
-    conf['lr'] = 1e-4
-    conf['pre_epochs'] = 100
+    conf['lr'] = 1e-3
+    conf['pre_epochs'] = 500
     # If the DILCR effect is not good, we recommend adjusting the preprocessing epoch.
     conf['cluster_num'] = 3
-    
     
     seed = 123456
     setup_seed(seed=seed)
@@ -97,10 +90,9 @@ if __name__ == '__main__':
     writer.writerow(['acc'])
     # =======================Initialize the model and loss function====================
     in_dim = [metagenomics_df.shape[1], metatranscriptomics_df.shape[1], metabolomics_df.shape[1]]
-    model = DILCR(in_dim=in_dim, encoder_dim=conf['encoder_dim'], feature_dim=conf['feature_dim'],
-                  common_dim=conf['common_dim'],
-                  mu_logvar_dim=conf['mu_logvar_dim'], cluster_var_dim=conf['cluster_var_dim'],
-                  peculiar_dim=conf['peculiar_dim'], view_num=conf['view_num'])
+    model = DILCR(in_dim=in_dim, encoder_dim=conf['encoder_dim'], feature_dim=conf['feature_dim'], peculiar_dim=512, common_dim=512,
+                 mu_logvar_dim=10, cluster_var_dim=384, up_and_down_dim=512, view_num=conf['view_num'],
+                 temperature=.67, device = 'cpu')
 
     # model = model.to(device)
     opt = torch.optim.Adam( params=model.parameters(), lr=conf['lr'])
@@ -127,6 +119,7 @@ if __name__ == '__main__':
         loss.backward()
         opt.step()
         epoch_loss += loss.item()
+        print(loss_dict)
     
         print(f'Epoch {epoch + 1}, Loss: {epoch_loss/len(dataloader)}')
         
@@ -134,7 +127,7 @@ if __name__ == '__main__':
             with torch.no_grad():
                 model.eval()
                 output = survival_df
-                out_list, latent_dist, pred_output, _= model(full_data)
+                out_list, latent_dist, pred_output, _ = model(full_data)
                 pred_output_binary = [1 if p > 0.5 else 0 for p in pred_output]
                 ibd_acc = accuracy_score(output, pred_output_binary)
                 writer.writerow([ibd_acc, epoch, "pre"])
@@ -156,7 +149,7 @@ total = 0
 with torch.no_grad():
     for batch in dataloader:
         *X_batch, y_batch = batch
-        out_list, latent_dist, outputs, _ = model(X_batch)
+        _, _, outputs, _ = model(X_batch)
         predicted = (outputs > 0.5).float()
         total += y_batch.size(0)
         correct += (predicted == y_batch).sum().item()

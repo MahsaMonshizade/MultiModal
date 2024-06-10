@@ -51,12 +51,12 @@ class loss_funcation(nn.Module):
             KLD += 0.5 * torch.sum(torch.exp(logvar[i]) + torch.pow(mu[i], 2) - 1. - logvar[i])
         rec_loss /= view_num
         KLD /= view_num
-        # # 同一个视图的common 和 peculiar 应该尽量不相关
-        # # 不同视图的common 应该尽量的相关
+        # 同一个视图的common 和 peculiar 应该尽量不相关
+        # 不同视图的common 应该尽量的相关
         I_loss = ContrastiveLoss(view_num,Mv_common_peculiar,batch_size = batch_size)
         criterian_IBD = nn.BCELoss()
         C_loss = criterian_IBD(pred_output, output)
-        loss = (lmda_list['rec_lmda'] * rec_loss + lmda_list['KLD_lmda'] * KLD + lmda_list['I_loss_lmda'] * I_loss + C_loss)
+        loss = (lmda_list['rec_lmda'] * rec_loss + lmda_list['KLD_lmda'] * KLD + lmda_list['I_loss_lmda'] * I_loss +10 * C_loss)
         loss_dict['rec_loss'] = rec_loss
         loss_dict['KLD'] = KLD
         loss_dict['I_loss'] = I_loss
@@ -123,7 +123,7 @@ class DILCR(nn.Module):
                 nn.GELU()
             ))
         # common
-        trans_enc = nn.TransformerEncoderLayer(d_model=self.fusion_dim, nhead=1, dim_feedforward=1024,dropout=0.0)
+        # trans_enc = nn.TransformerEncoderLayer(d_model=self.fusion_dim, nhead=1, dim_feedforward=1024,dropout=0.0)
         if self.use_up_and_down != 0:
             fusion_to_cluster = nn.Sequential(
                 nn.Linear(self.fusion_dim, self.up_and_down_dim),
@@ -160,7 +160,13 @@ class DILCR(nn.Module):
         self.Mv_feature_peculiar = nn.ModuleList(Mv_feature_peculiar)
         self.Mv_peculiar_to_mu_logvar = nn.ModuleList(Mv_peculiar_to_mu_logvar)
         self.Mv_feature_to_common = nn.ModuleList(Mv_feature_to_common)
-        self.Mv_common_to_fusion = nn.TransformerEncoder(trans_enc, num_layers=1)
+        # self.Mv_common_to_fusion = nn.TransformerEncoder(trans_enc, num_layers=1)
+        self.MV_common_to_fusion = nn.Sequential(  
+            nn.Linear(3*self.common_dim, 128),
+            nn.GELU(),
+            nn.Linear(128, self.fusion_dim),
+            nn.GELU()
+        )
         self.fusion_to_cluster = fusion_to_cluster
         self.cluster_to_classification = nn.Sequential(
             nn.Linear(self.cluster_var_dim, 128),
@@ -191,7 +197,7 @@ class DILCR(nn.Module):
         # # print(feature)
         Mv_common = torch.concat(common, dim=1)
         Mv_common = torch.unsqueeze(Mv_common, dim=1)
-        fusion = self.Mv_common_to_fusion(Mv_common)
+        fusion = self.MV_common_to_fusion(Mv_common)
         fusion = fusion.reshape([Mv_common.shape[0], -1])
         cluster_var = self.fusion_to_cluster(fusion)
 

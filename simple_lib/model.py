@@ -41,19 +41,19 @@ class DILCR(nn.Module):
             encoder_MLP = []
             encoder_MLP += [
                 nn.Linear(in_dim[i], feature_dim),
-                nn.ReLU(inplace=False)
+                nn.GELU()
             ]
 
             Mv_encoder_MLP.append(nn.Sequential(*encoder_MLP))
         self.Mv_in_to_feature = nn.ModuleList(Mv_encoder_MLP)
         self.features_to_feature = nn.Sequential(
             nn.Linear(3*feature_dim, feature_dim),
-            nn.ReLU(inplace=False)
+            nn.GELU()
         )
         
         self.feature_to_classification = nn.Sequential(
             nn.Linear(feature_dim, 128),
-            nn.ReLU(inplace=False),
+            nn.GELU(),
             nn.Linear(128, 1),
             nn.Sigmoid()
         )
