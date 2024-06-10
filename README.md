@@ -17,6 +17,7 @@ conda install anaconda::scikit-learn
 conda install anaconda::scipy
 conda install conda-forge::tqdm
 conda install pytorch::pytorch torchvision torchaudio -c pytorch
+conda install anaconda::seaborn
 ```
 
 metagenomics --> samples: 2891 , features: 578

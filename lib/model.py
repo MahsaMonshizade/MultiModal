@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+
 from torch.nn import functional as F
 import numpy as np
 
@@ -34,14 +35,14 @@ class loss_funcation(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, view_num, data_batch, out_list, latent_dist, lmda_list, batch_size):
+    def forward(self, view_num, data_batch, out_list, latent_dist, lmda_list, batch_size, pred_output, output):
         '''
            batch
         '''
         batch_size = data_batch[0].shape[1]
         Mv_common_peculiar = latent_dist['Mv_common_peculiar']
         mu, logvar = latent_dist['mu_logvar']  # logvar
-        rec_loss, KLD, I_loss, loss = 0.0, 0.0, 0.0, 0.0
+        rec_loss, KLD, I_loss, C_loss, loss = 0.0, 0.0, 0.0, 0.0, 0.0
         # label 
         loss_dict = {}
         # KLD
@@ -53,17 +54,20 @@ class loss_funcation(nn.Module):
         # # 同一个视图的common 和 peculiar 应该尽量不相关
         # # 不同视图的common 应该尽量的相关
         I_loss = ContrastiveLoss(view_num,Mv_common_peculiar,batch_size = batch_size)
-        loss = (lmda_list['rec_lmda'] * rec_loss + lmda_list['KLD_lmda'] * KLD + lmda_list['I_loss_lmda'] * I_loss)
+        criterian_IBD = nn.BCELoss()
+        C_loss = criterian_IBD(pred_output, output)
+        loss = (lmda_list['rec_lmda'] * rec_loss + lmda_list['KLD_lmda'] * KLD + lmda_list['I_loss_lmda'] * I_loss + C_loss)
         loss_dict['rec_loss'] = rec_loss
         loss_dict['KLD'] = KLD
         loss_dict['I_loss'] = I_loss
+        loss_dict['C_loss'] = C_loss
         loss_dict['loss'] = loss
         return loss, loss_dict
 
 
 class DILCR(nn.Module):
     def __init__(self, in_dim=[], encoder_dim=[], feature_dim=512, peculiar_dim=512, common_dim=512,
-                 mu_logvar_dim=10, cluster_var_dim=384, view_num=3,
+                 mu_logvar_dim=10, cluster_var_dim=384, up_and_down_dim=512, view_num=3,
                  temperature=.67, device = 'cpu'):
         super(DILCR, self).__init__()
         self.device = device
@@ -78,6 +82,8 @@ class DILCR(nn.Module):
         self.fusion_dim = self.common_dim * 3
         self.alpha = 1.0
         self.cluster_var_dim = cluster_var_dim
+        self.up_and_down_dim = up_and_down_dim
+        self.use_up_and_down = up_and_down_dim
 
         Mv_encoder_MLP = []
         Mv_feature_peculiar = []
@@ -117,7 +123,20 @@ class DILCR(nn.Module):
             ))
         # common
         trans_enc = nn.TransformerEncoderLayer(d_model=self.fusion_dim, nhead=1, dim_feedforward=1024,dropout=0.0)
-
+        if self.use_up_and_down != 0:
+            fusion_to_cluster = nn.Sequential(
+                nn.Linear(self.fusion_dim, self.up_and_down_dim),
+                # lusc
+                nn.Linear(self.up_and_down_dim, 128),
+                nn.ReLU(),
+                nn.Linear(128, self.up_and_down_dim),
+                nn.Linear(self.up_and_down_dim, self.cluster_var_dim)
+            )
+        else:
+            fusion_to_cluster = nn.Sequential(
+                nn.Linear(self.fusion_dim, self.fusion_dim),
+                nn.Linear(self.fusion_dim, self.cluster_var_dim),
+            )
         for i in range(view_num):
             decoder_MLP = []
             self.peculiar_and_class_dim = mu_logvar_dim + self.cluster_var_dim
@@ -142,6 +161,12 @@ class DILCR(nn.Module):
         self.Mv_feature_to_common = nn.ModuleList(Mv_feature_to_common)
         self.Mv_common_to_fusion = nn.TransformerEncoder(trans_enc, num_layers=1)
         self.fusion_to_cluster = fusion_to_cluster
+        self.cluster_to_classification = nn.Sequential(
+            nn.Linear(self.cluster_var_dim, 128),
+            nn.GELU(),
+            nn.Linear(128, 1),
+            nn.Sigmoid()
+        )
         self.Mv_decoder_MLP = nn.ModuleList(Mv_decoder_MLP)
 
     def encoder(self, X):
@@ -169,7 +194,7 @@ class DILCR(nn.Module):
         fusion = fusion.reshape([Mv_common.shape[0], -1])
         cluster_var = self.fusion_to_cluster(fusion)
 
-        return Mv_common_peculiar, fusion, cluster_var, mu, logvar
+        return Mv_common_peculiar, fusion, cluster_var, mu, logvar, X[view_index]
 
     def reparameterization(self, mu, logvar):
         if self.training:
@@ -193,7 +218,7 @@ class DILCR(nn.Module):
         :return:
         '''
         latent_dist = dict()
-        Mv_common_peculiar, fusion, cluster_var, mu, logvar = self.encoder(X)
+        Mv_common_peculiar, fusion, cluster_var, mu, logvar, X_view = self.encoder(X)
         # common
         peculiar_and_common = []
         z = []
@@ -204,7 +229,7 @@ class DILCR(nn.Module):
             logvar[i] = bn(logvar[i])
             z.append(self.reparameterization(mu[i], logvar[i]))
             peculiar_and_common.append(torch.concat([z[i], cluster_var], dim=1))
-
+        pred_output = self.cluster_to_classification(cluster_var)
         out_list = self.decoder(peculiar_and_common)
 
         latent_dist['mu_logvar'] = [mu, logvar]
@@ -212,4 +237,4 @@ class DILCR(nn.Module):
         latent_dist['Mv_common_peculiar'] = Mv_common_peculiar
         latent_dist['z'] = z  # mu,logvar 链接之后的z
         latent_dist['cluster_var'] = cluster_var
-        return out_list, latent_dist
+        return out_list, latent_dist, pred_output, X_view
