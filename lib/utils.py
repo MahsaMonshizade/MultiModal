@@ -21,12 +21,8 @@ def metagenomics_normalize(x):
 
 
 
-def normalize(x):
-    mean_value = x.mean()
-    max_value = x.max()
-    min_value = x.min()
-    return (x - mean_value) / (max_value - min_value)
-    
+def normalize(tensor):
+     return (tensor - tensor.mean()) / tensor.std()
 
 # def lifeline_analysis(df, title_g="brca"):
 #     '''

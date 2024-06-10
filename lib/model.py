@@ -92,6 +92,7 @@ class DILCR(nn.Module):
         # decoder
         Mv_decoder_MLP = []
         for i in range(self.view_num):
+            print(encoder_dim[0])
             encoder_MLP = []
             encoder_MLP += [
                 nn.Linear(in_dim[i], encoder_dim[0]),

@@ -25,3 +25,7 @@ metagenomics --> samples: 2891 , features: 578
 metatranscriptomics --> samples: 2891 , features: 421  
 
 metabolomics --> samples: 2891 , features: 596
+
+Always a good practice to define a random input output tp see if problems are from your data or your model or the way you run your model
+for dataset it's a good practice to normalize data 
+also some problems in evaluation part
